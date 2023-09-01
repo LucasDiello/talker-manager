@@ -8,6 +8,15 @@ const readJson = async () => {
     } catch (err) {
         console.error(`Erro ao ler o arquivo: ${err.message}`);
     }
-};
+};  
 
-module.exports = { readJson };
+const writeJson = async (data) => {
+    const oldData = await readJson();
+    const newData = [...oldData, data];
+    try {
+        await fs.writeFile(resolve(__dirname, './talker.json'), JSON.stringify(newData));
+    } catch (err) {
+        console.error(`Erro ao escrever no arquivo: ${err.message}`);
+    }
+};
+module.exports = { readJson, writeJson };
