@@ -74,7 +74,7 @@ routerTalker.get('/', async (_req, res) => {
     res.status(200).json(talkers);
 });
 
-routerTalker.get('/search?numero=value', async (req, res) => {    
+routerTalker.get('/search', async (req, res) => {    
       const { q } = req.query;
       const talkers = await readJson();
       const filteredTalkers = talkers.filter((talker) => talker.name.includes(q));
