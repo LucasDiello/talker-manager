@@ -1,86 +1,43 @@
 const express = require('express');
 
 const routerTalker = express.Router();
-const { readJson, writeJson, updateJson, deleteJson } = require('../readJson');
+const { readJson,
+        writeJson,
+        updateJson,
+        deleteJson } = require('../readJson');
+const { validateToken,
+        validateTalkerName,
+        validateTalkerAge,
+        validateFormatDate,
+        validateRate,
+        validQuerys } = require('./validateTalker');
 
-const validateToken = (req, res, next) => {
-    const { authorization } = req.headers;
-
-    if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
-    if (authorization.length !== 16) return res.status(401).json({ message: 'Token inválido' });
-    next();
-};
-
-const validateFormatDate = (req, res, next) => {
-    const { talk } = req.body; 
-    if (!talk) {
-    return res.status(400).json({ message: 'O campo "talk" é obrigatório' });
-    }
-    const { watchedAt } = talk;
-    const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
-    if (!watchedAt) {
-    return res.status(400).json({ message: 'O campo "watchedAt" é obrigatório' });
-    }
-    if (!dateRegex.test(watchedAt)) {
- return res.status(400)
-    .json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' }); 
-}
-    next();
-};
-
-const validateRate = (req, res, next) => {
-    const { talk } = req.body;
-    const { rate } = talk;
-    if (rate === undefined) {
-        return res.status(400).json({ message: 'O campo "rate" é obrigatório' });
-    }
-    if (rate <= 0 || rate > 5 || !Number.isInteger(rate)) {
-        return res.status(400)
-        .json({ message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' });
-    }
-    next();
-};
-
-const validateTalkerName = (req, res, next) => {
-    const { name } = req.body;
-    if (!name) {
-    return res.status(400).json({ message: 'O campo "name" é obrigatório' });
-    }
-    if (name.length < 3) {
- return res.status(400)
-    .json({ message: 'O "name" deve ter pelo menos 3 caracteres' }); 
-}
-    next();
-};
-
-const validateTalkerAge = (req, res, next) => {
-    const { age } = req.body;
-
-    if (!age) {
-    return res.status(400).json({ message: 'O campo "age" é obrigatório' });
-}
-    if (!Number.isInteger(age) || age < 18) {
-        return res.status(400)
-        .json({ message: 'O campo "age" deve ser um número inteiro igual ou maior que 18' });
-    }
-    if (!Number(age)) {
-    return res.status(400).json({ message: 'O campo "age" deve ser um número' });
-}
-next();
-};
+const fTalkerName = (talkers, query) => talkers.filter((talker) => talker.name.includes(query));
+const fTalkerRt = (talkers, rate) => talkers.filter((talker) => talker.talk.rate === Number(rate));
 
 routerTalker.get('/', async (_req, res) => {
     const talkers = await readJson();
     res.status(200).json(talkers);
 });
 
-routerTalker.get('/search', async (req, res) => {    
-      const { q } = req.query;
-      const talkers = await readJson();
-      const filteredTalkers = talkers.filter((talker) => talker.name.includes(q));
-      res.status(200).json(filteredTalkers);
-      if (!filteredTalkers) return res.status(200).json([]);
-});
+routerTalker.get('/search', validateToken, validQuerys, async (req, res) => {
+    const { q, rate } = req.query;
+    const talkers = await readJson();
+    if (rate && q) {
+        const filteredTalkersName = fTalkerName(talkers, q);
+        const filteredTalkers = fTalkerRt(filteredTalkersName, rate);
+        return res.status(200).json(filteredTalkers);
+    }
+    if (q) {
+        const filteredTalkers = fTalkerName(talkers, q);
+        return res.status(200).json(filteredTalkers);
+    }
+    
+    if (rate) {
+        const filteredTalkers = fTalkerRt(talkers, rate);
+      return res.status(200).json(filteredTalkers);
+    }
+  });
 
 routerTalker.get('/:id', async (req, res) => {
     const { id } = req.params;
@@ -113,10 +70,10 @@ routerTalker.post(
 );
 
 routerTalker.put('/:id',
-validateToken,
- validateTalkerName,
-  validateTalkerAge,
-   validateFormatDate,
+    validateToken,
+    validateTalkerName,
+    validateTalkerAge,
+    validateFormatDate,
     validateRate, async (req, res) => {
         const { id } = req.params;
         const { name, age, talk } = req.body;
