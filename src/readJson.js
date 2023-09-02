@@ -19,4 +19,21 @@ const writeJson = async (data) => {
         console.error(`Erro ao escrever no arquivo: ${err.message}`);
     }
 };
-module.exports = { readJson, writeJson };
+
+const updateJson = async (data) => {
+    const oldData = await readJson();
+    const updateData = { ...data };
+    const updated = oldData.reduce((acc, curr) => 
+        (curr.id === updateData.id ? [...acc, updateData] : [...acc, curr]),
+         []);
+    await fs.writeFile(resolve(__dirname, './talker.json'), JSON.stringify(updated));
+    return updateData;
+};
+
+const deleteJson = async (id) => {
+    const oldData = await readJson();
+    const updated = oldData.filter((talker) => talker.id !== id);
+    await fs.writeFile(resolve(__dirname, './talker.json'), JSON.stringify(updated));
+};
+
+module.exports = { readJson, writeJson, updateJson, deleteJson };

@@ -1,20 +1,7 @@
 const express = require('express');
 
 const routerTalker = express.Router();
-const { readJson, writeJson } = require('../readJson');
-
-routerTalker.get('/', async (_req, res) => {
-    const talkers = await readJson();
-    res.status(200).json(talkers);
-});
-
-routerTalker.get('/:id', async (req, res) => {
-    const { id } = req.params;
-    const talkers = await readJson();
-    const talker = talkers.find((talke) => talke.id === Number(id));
-    if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
-    res.status(200).json(talker);
-});
+const { readJson, writeJson, updateJson, deleteJson } = require('../readJson');
 
 const validateToken = (req, res, next) => {
     const { authorization } = req.headers;
@@ -71,7 +58,7 @@ const validateTalkerAge = (req, res, next) => {
 
     if (!age) {
     return res.status(400).json({ message: 'O campo "age" é obrigatório' });
-    }
+}
     if (!Number.isInteger(age) || age < 18) {
         return res.status(400)
         .json({ message: 'O campo "age" deve ser um número inteiro igual ou maior que 18' });
@@ -81,6 +68,19 @@ const validateTalkerAge = (req, res, next) => {
     }
     next();
 };
+
+routerTalker.get('/', async (_req, res) => {
+    const talkers = await readJson();
+    res.status(200).json(talkers);
+});
+
+routerTalker.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    const talkers = await readJson();
+    const talker = talkers.find((talke) => talke.id === Number(id));
+    if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+    res.status(200).json(talker);
+});
 
 routerTalker.post(
     '/',
@@ -103,5 +103,31 @@ routerTalker.post(
     }
 },
 );
+
+routerTalker.put('/:id',
+validateToken,
+ validateTalkerName,
+  validateTalkerAge,
+   validateFormatDate,
+    validateRate, async (req, res) => {
+        const { id } = req.params;
+        const { name, age, talk } = req.body;
+        const { watchedAt, rate } = talk;
+        const talkers = await readJson();
+        const talker = talkers.find((talke) => talke.id === Number(id));
+        if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+        const updatedTalker = await updateJson({
+             name, age, id: Number(id), talk: { watchedAt, rate } });
+        res.status(200).json(updatedTalker);
+});
+
+routerTalker.delete('/:id', validateToken, async (req, res) => {
+    const { id } = req.params;
+    const talkers = await readJson();
+    const talker = talkers.find((talke) => talke.id === Number(id));
+    if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+    await deleteJson(Number(id));
+    res.status(204).end();
+});
 
 module.exports = routerTalker;
