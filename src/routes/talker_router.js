@@ -65,13 +65,21 @@ const validateTalkerAge = (req, res, next) => {
     }
     if (!Number(age)) {
     return res.status(400).json({ message: 'O campo "age" deve ser um número' });
-    }
-    next();
+}
+next();
 };
 
 routerTalker.get('/', async (_req, res) => {
     const talkers = await readJson();
     res.status(200).json(talkers);
+});
+
+routerTalker.get('/search?numero=value', async (req, res) => {    
+      const { q } = req.query;
+      const talkers = await readJson();
+      const filteredTalkers = talkers.filter((talker) => talker.name.includes(q));
+      res.status(200).json(filteredTalkers);
+      if (!filteredTalkers) return res.status(200).json([]);
 });
 
 routerTalker.get('/:id', async (req, res) => {
