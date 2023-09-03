@@ -1,5 +1,6 @@
 const express = require('express');
 const { conditionalDate } = require('../utilities/func');
+const { getAll } = require('../db/talkerDB');
 
 const routerTalker = express.Router();
 const { readJson,
@@ -16,6 +17,11 @@ const { validateToken,
 routerTalker.get('/', async (_req, res) => {
     const talkers = await readJson();
     res.status(200).json(talkers);
+});
+
+routerTalker.get('/db', async (req, res) => {
+    const [result] = await getAll();
+    res.status(200).json(result);
 });
 
 routerTalker.get('/search', validateToken, validQuerys, async (req, res) => {
@@ -84,6 +90,16 @@ routerTalker.put('/:id',
         const updatedTalker = await updateJson({
              name, age, id: Number(id), talk: { watchedAt, rate } });
         res.status(200).json(updatedTalker);
+});
+
+routerTalker.patch('/rate/:id', validateToken, validateRate, async (req, res) => {
+    const { id } = req.params;
+    const { rate } = req.body;
+    const talkers = await readJson();
+    const talker = talkers.find((talke) => talke.id === Number(id));
+    if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+    await updateJson({ ...talker, talk: { ...talker.talk, rate } });
+    res.status(204).end();
 });
 
 routerTalker.delete('/:id', validateToken, async (req, res) => {

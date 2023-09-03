@@ -1,5 +1,5 @@
 const { readJson } = require('../readJson');
-const { validRate, conditionQuerys } = require('../utilities/func');
+const { conditionQuerys, conditionalRate } = require('../utilities/func');
 
 const validateToken = (req, res, next) => {
     const { authorization } = req.headers;
@@ -28,11 +28,11 @@ const validateFormatDate = (req, res, next) => {
 
 const validateRate = (req, res, next) => {
     const { talk } = req.body;
-    const { rate } = talk;
+    const rate = talk ? talk.rate : req.body.rate;
     if (rate === undefined) {
         return res.status(400).json({ message: 'O campo "rate" é obrigatório' });
     }
-    if (rate <= 0 || rate > 5 || !Number.isInteger(rate)) {
+    if (conditionalRate(rate)) {
         return res.status(400)
         .json({ message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' });
     }
@@ -71,7 +71,7 @@ const validQuerys = async (req, res, next) => {
   const { q, rate, date } = req.query;
   const talkers = await readJson();
   if (conditionQuerys(q, rate, date)) return res.status(200).json(talkers);
-  if (conditionQuerys(q, validRate(rate), date)) {
+  if (conditionQuerys(q, !conditionalRate(rate), date)) {
  return res.status(400)
         .json({ message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' }); 
 }
