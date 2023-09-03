@@ -1,4 +1,5 @@
 const express = require('express');
+const { conditionalDate } = require('../utilities/func');
 
 const routerTalker = express.Router();
 const { readJson,
@@ -12,32 +13,31 @@ const { validateToken,
         validateRate,
         validQuerys } = require('./validateTalker');
 
-const fTalkerName = (talkers, query) => talkers.filter((talker) => talker.name.includes(query));
-const fTalkerRt = (talkers, rate) => talkers.filter((talker) => talker.talk.rate === Number(rate));
-
 routerTalker.get('/', async (_req, res) => {
     const talkers = await readJson();
     res.status(200).json(talkers);
 });
 
 routerTalker.get('/search', validateToken, validQuerys, async (req, res) => {
-    const { q, rate } = req.query;
+    const { q, rate, date } = req.query;
     const talkers = await readJson();
-    if (rate && q) {
-        const filteredTalkersName = fTalkerName(talkers, q);
-        const filteredTalkers = fTalkerRt(filteredTalkersName, rate);
-        return res.status(200).json(filteredTalkers);
-    }
+    const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+    const arrFunc = [];
     if (q) {
-        const filteredTalkers = fTalkerName(talkers, q);
-        return res.status(200).json(filteredTalkers);
+        arrFunc.push((talker) => talker.name.includes(q));
     }
-    
     if (rate) {
-        const filteredTalkers = fTalkerRt(talkers, rate);
-      return res.status(200).json(filteredTalkers);
+        arrFunc.push((talker) => talker.talk.rate === Number(rate));
     }
-  });
+    if (conditionalDate(dateRegex, date)) {
+ return res.status(400).json({ message: 'O parâmetro "date" deve ter o formato "dd/mm/aaaa"' }); 
+}
+    if (date) {
+        arrFunc.push((talker) => talker.talk.watchedAt === date);
+     }
+    const filteredTalkers = talkers.filter((talker) => arrFunc.every((filter) => filter(talker)));
+    res.status(200).json(filteredTalkers);
+});
 
 routerTalker.get('/:id', async (req, res) => {
     const { id } = req.params;
