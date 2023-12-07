@@ -15,7 +15,7 @@ const { validateToken,
         validQuerys } = require('./validateTalker');
 
 routerTalker.get('/', async (_req, res) => {
-    const talkers = await readJson();
+    const [talkers] = await getAll();
     res.status(200).json(talkers);
 });
 
@@ -24,7 +24,7 @@ routerTalker.get('/db', async (req, res) => {
     res.status(200).json(result);
 });
 
-routerTalker.get('/search', validateToken, validQuerys, async (req, res) => {
+routerTalker.get('/search', validQuerys, async (req, res) => {
     const { q, rate, date } = req.query;
     const talkers = await readJson();
     const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
@@ -53,9 +53,11 @@ routerTalker.get('/:id', async (req, res) => {
     res.status(200).json(talker);
 });
 
+routerTalker.use(validateToken);
+
 routerTalker.post(
     '/',
-    validateToken,
+
     validateTalkerName,
     validateTalkerAge,
     validateFormatDate,
@@ -76,7 +78,6 @@ routerTalker.post(
 );
 
 routerTalker.put('/:id',
-    validateToken,
     validateTalkerName,
     validateTalkerAge,
     validateFormatDate,
@@ -92,7 +93,7 @@ routerTalker.put('/:id',
         res.status(200).json(updatedTalker);
 });
 
-routerTalker.patch('/rate/:id', validateToken, validateRate, async (req, res) => {
+routerTalker.patch('/rate/:id', validateRate, async (req, res) => {
     const { id } = req.params;
     const { rate } = req.body;
     const talkers = await readJson();
@@ -102,7 +103,7 @@ routerTalker.patch('/rate/:id', validateToken, validateRate, async (req, res) =>
     res.status(204).end();
 });
 
-routerTalker.delete('/:id', validateToken, async (req, res) => {
+routerTalker.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const talkers = await readJson();
     const talker = talkers.find((talke) => talke.id === Number(id));

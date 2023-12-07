@@ -16,4 +16,4 @@ COPY .eslint* seed.sql jest.config.js ./
 USER node
 
 # Substitui o comando padrão da imagem do node
-CMD [ "/bin/bash" ]
+CMD [ "npm", "run", "dev" ]
